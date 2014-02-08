@@ -51,8 +51,8 @@ markdown :: [Text]
 
 markdown1 :: Text
 	= h:header				{ return h }
-	/ c:code				{ return $ Code c }
 	/ l:list				{ return $ List l }
+	/ c:code				{ return $ Code c }
 	/ p:paras				{ return $ Paras p }
 
 header :: Text
@@ -123,7 +123,8 @@ paras :: [String]
 	= ps:para+				{ return ps }
 
 para :: String
-	= ls:(!_:header !_:fourSpaces l:line '\n' { return l })+ _:('\n' / !_ / !_:para)	{ return $ concat ls }
+	= ls:(!_:header !_:fourSpaces l:line '\n' { return l })+ _:('\n' / !_ / !_:para) !_:list
+						{ return $ concat ls }
 
 shllw :: ()
 	= _:dmmy[shallow]
