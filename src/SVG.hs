@@ -9,6 +9,7 @@ import Data.Char
 import Text.XML.YJSVG
 
 import Text.Markdown.Pap
+import SepWords
 
 headerFont, normalFont, codeFont :: String
 headerFont = "Kochi Gothic"
@@ -119,9 +120,9 @@ separateString len = sepStr 0
 paraToSVGData :: Double -> Double -> String -> (Double, [SVG])
 paraToSVGData r h str = (h', l : svgs)
 	where
-	(s, t) = splitAtString (lineChars - 3) str
+	(s, t) = splitWords (lineChars - 3) str
 	l = Text (TopLeft (paraLeftMargin r + normal r) (h + normal r)) (normal r) (ColorName "black") normalFont s
-	ls = separateString lineChars t
+	ls = sepWords lineChars t
 	(h', svgs) = strsToSVGData r (h + normalSep r) ls
 
 strsToSVGData :: Double -> Double -> [String] -> (Double, [SVG])
