@@ -3,10 +3,12 @@ module SVG (
 ) where
 
 import Control.Applicative
+import Data.Maybe
+import Data.List
 import Data.Char
 import Text.XML.YJSVG
 
-import Text
+import Text.Markdown.Pap
 
 headerFont, normalFont, codeFont :: String
 headerFont = "Kochi Gothic"
@@ -153,3 +155,14 @@ codeToSVGData r h (s : ss) = (h', l : svgs)
 	where
 	l = Text (TopLeft (codeLeftMargin r) (h + code r)) (code r) (ColorName "black") codeFont s
 	(h', svgs) = codeToSVGData r (h + codeSep r) ss
+
+addChapters :: [Maybe Int] -> [Text] -> [Text]
+addChapters _ [] = []
+addChapters cs (Header n s : ts)
+	| isJust $ cs !! (n - 1) =
+		Header n (chaps ++ " " ++ s) : addChapters newCs ts
+	| otherwise = Header n s : addChapters newCs ts
+	where
+	chaps = concatMap (++ ".") $ map show $ catMaybes $ take n newCs
+	newCs = take (n - 1) cs ++ [(+ 1) <$> cs !! (n - 1)] ++ drop n cs
+addChapters cs (t : ts) = t : addChapters cs ts

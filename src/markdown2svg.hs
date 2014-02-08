@@ -5,7 +5,7 @@ import System.FilePath
 import System.Console.GetOpt
 import System.Exit
 
-import Parser
+import Text.Markdown.Pap
 import SVG
 
 main :: IO ()
@@ -16,7 +16,7 @@ main = do
 	let	size = getSizeR opts
 		dir = getDir opts
 	cnt <- readFile fp
-	case parseMrd cnt of
+	case parse cnt of
 		Just t -> forM_ (zip [1 ..] $ textToSVG True size t) $ \(i, s) ->
 			writeFile (mkSVGFileName dir fp i) s
 		_ -> return ()
