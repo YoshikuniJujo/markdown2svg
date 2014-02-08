@@ -4,7 +4,6 @@ module SVG (
 
 import Control.Applicative
 import Data.Maybe
-import Data.List
 import Data.Char
 import Text.XML.YJSVG
 
@@ -19,6 +18,7 @@ codeFont = "Kochi Gothic"
 
 textToSVG :: Bool -> Double -> [Text] -> [String]
 textToSVG n r = map (showSVG (width r) (height r)) . textToSVGData r (topMargin r) .
+	preprocess .
 	if n then addChapters [Nothing, Just 0, Just 0, Just 0, Nothing, Nothing] else id
 
 width, height :: Double -> Double
@@ -167,3 +167,14 @@ addChapters cs (Header n s : ts)
 	chaps = concatMap (++ ".") $ map show $ catMaybes $ take n newCs
 	newCs = take (n - 1) cs ++ [(+ 1) <$> cs !! (n - 1)] ++ drop n cs
 addChapters cs (t : ts) = t : addChapters cs ts
+
+preprocess :: [Text] -> [Text]
+preprocess [] = []
+preprocess (Paras strs : ts) = Paras (map remSpaces strs) : preprocess ts
+preprocess (t : ts) = t : preprocess ts
+
+remSpaces :: String -> String
+remSpaces "" = ""
+remSpaces (c : ' ' : c' : cs)
+	| not (isAscii c) || not (isAscii c') = c : c' : remSpaces cs
+remSpaces (c : cs) = c : remSpaces cs
