@@ -38,7 +38,7 @@ bottomBorder :: Double -> Double
 bottomBorder = (-) <$> height <*> bottomMargin
 
 header :: Int -> Double -> Double
-header i = ((1 / fromIntegral (i + 1)) * 560 *)
+header i = ((1 / fromIntegral (i + 1)) * 450 *)
 headerSep i = (* (4 / 3)) <$> header i
 
 normal, normalSep :: Double -> Double
@@ -50,7 +50,7 @@ code = (70 *)
 codeSep = (* (4 / 3)) <$> code
 
 lineChars :: Int
-lineChars = 66
+lineChars = 60
 
 textToSVGData :: Double -> Double -> [Text] -> [[SVG]]
 textToSVGData r h [] = [[]]
