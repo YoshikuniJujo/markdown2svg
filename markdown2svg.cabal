@@ -38,4 +38,4 @@ executable markdown2svg
   main-is:		markdown2svg.hs
   build-depends:	base > 3 && < 5, yjsvg, papillon, filepath, monads-tf, markdown-pap
   ghc-options:		-Wall
-  other-modules:	SVG, SepWords
+  other-modules:	SVG, SepWords, Image, Image/PNG, Image/JPG, Image/SVG
