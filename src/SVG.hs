@@ -17,7 +17,8 @@ headerFont, normalFont, codeFont :: String
 headerFont = "Kochi Gothic"
 normalFont = "Kochi Mincho"
 -- normalFont = "Kochi Gothic"
-codeFont = "Kochi Gothic"
+-- codeFont = "Kochi Gothic"
+codeFont = "Monospace"
 
 textToSVG :: [(FilePath, String)] -> Bool -> Double -> [Text] -> [String]
 textToSVG fp n r = map (showSVG (width r) (height r)) . textToSVGData fp r (topMargin r) .
