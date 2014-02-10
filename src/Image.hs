@@ -1,5 +1,5 @@
 module Image (isPNG, isJPG, isSVG, svgSize) where
 
-import Image.PNG (isPNG)
-import Image.JPG (isJPG)
+import Image.PNG (isPNG, pngSize)
+import Image.JPG (isJPG, jpgSize)
 import Image.SVG (isSVG, svgSize)

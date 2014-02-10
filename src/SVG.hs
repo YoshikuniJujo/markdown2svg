@@ -9,6 +9,7 @@ import Text.XML.YJSVG
 
 import Text.Markdown.Pap
 import SepWords
+import Image
 
 headerFont, normalFont, codeFont :: String
 headerFont = "Kochi Gothic"

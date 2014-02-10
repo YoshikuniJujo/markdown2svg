@@ -36,6 +36,8 @@ source-repository	this
 executable markdown2svg
   hs-source-dirs:	src
   main-is:		markdown2svg.hs
-  build-depends:	base > 3 && < 5, yjsvg, papillon, filepath, monads-tf, markdown-pap
+  build-depends:
+    base > 3 && < 5, yjsvg, papillon, filepath, monads-tf, markdown-pap,
+    binary-file, png-file
   ghc-options:		-Wall
-  other-modules:	SVG, SepWords, Image, Image/PNG, Image/JPG, Image/SVG
+  other-modules:	SVG, SepWords, Image, Image.PNG, Image.JPG, Image.SVG
