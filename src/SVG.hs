@@ -198,7 +198,9 @@ addChapters cs (Header n s : ts)
 	| otherwise = Header n s : addChapters newCs ts
 	where
 	chaps = concatMap (++ ".") $ map show $ catMaybes $ take n newCs
-	newCs = take (n - 1) cs ++ [(+ 1) <$> cs !! (n - 1)] ++ drop n cs
+	newCs = take (n - 1) cs ++ [(+ 1) <$> cs !! (n - 1)] ++ map reset (drop n cs)
+	reset (Just _) = Just 0
+	reset _ = Nothing
 addChapters cs (t : ts) = t : addChapters cs ts
 
 preprocess :: [Text] -> [Text]
