@@ -28,11 +28,13 @@ width, height :: Double -> Double
 width = (3535 *)
 height = (5000 *)
 
-topMargin, leftMargin, paraLeftMargin :: Double -> Double
+topMargin, leftMargin, paraLeftMargin, codeLeftMargin, listLeftMargin
+	:: Double -> Double
 topMargin = (400 *)
 leftMargin = (400 *)
 paraLeftMargin = (+) <$> leftMargin <*> (200 *)
 codeLeftMargin = (+) <$> paraLeftMargin <*> (200 *)
+listLeftMargin = (+) <$> paraLeftMargin <*> (200 *)
 
 bottomMargin :: Double -> Double
 bottomMargin = (400 *)
@@ -77,10 +79,10 @@ textToSVGData fp r h (List l : ts)
 	| h' > bottomBorder r = [] : (svgs' ++ one') : rest'
 	| otherwise = (svgs ++ one) : rest
 	where
-	(_, h', svgs) = listToSVGData 1 "*+-------" r h (paraLeftMargin r) l
-	(_, h'', svgs') = listToSVGData 1 "*+-------" r (topMargin r) (paraLeftMargin r) l
-	one : rest = textToSVGData fp r h' ts
-	one' : rest' = textToSVGData fp r h'' ts
+	(_, h', svgs) = listToSVGData 1 "*+-------" r (h + 100 * r) (listLeftMargin r) l
+	(_, h'', svgs') = listToSVGData 1 "*+-------" r (topMargin r) (listLeftMargin r) l
+	one : rest = textToSVGData fp r (h' + 100 * r) ts
+	one' : rest' = textToSVGData fp r (h'' + 100 * r) ts
 textToSVGData fp r h (Code s : ts)
 	| h' > bottomBorder r = [] : (svgs' ++ one') : rest'
 	| otherwise = (svgs ++ one) : rest
@@ -91,8 +93,8 @@ textToSVGData fp r h (Code s : ts)
 	one' : rest' = textToSVGData fp r (h'' + codeSep r) ts
 textToSVGData fp r h (Image _ p ttl : ts)
 	| h + ht > bottomBorder r =
-		[] : (SVG.Image (TopLeft (leftMargin r) (topMargin r)) wt ht p : svg') : svgs'
-	| otherwise = (SVG.Image (TopLeft (leftMargin r) h) wt ht p : svg) : svgs
+		[] : (SVG.Image (TopLeft left (topMargin r)) wt ht p : svg') : svgs'
+	| otherwise = (SVG.Image (TopLeft left h) wt ht p : svg) : svgs
 	where
 	svg : svgs = textToSVGData fp r (h + ht + r * 100) ts
 	svg' : svgs' = textToSVGData fp r (topMargin r + ht + r * 100) ts
@@ -104,6 +106,10 @@ textToSVGData fp r h (Image _ p ttl : ts)
 		Just (w_, h_) -> (w_ * ratio, h_ * ratio)
 		_ -> (r * 1000, r * 1000)
 	ratio = width r - 2 * leftMargin r
+	left = case ttl of
+		"large" -> leftMargin r
+		"small" -> ratio * 4 / 10
+		_ -> ratio * 1 / 3
 
 splitAtString :: Int -> String -> (String, String)
 splitAtString len = sepStr 0
