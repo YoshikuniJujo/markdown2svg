@@ -10,6 +10,9 @@ splitWords = flip splitWords_ 0
 
 splitWords_ :: Int -> Int -> String -> (String, String)
 splitWords_ _ _ "" = ("", "")
+splitWords_ n k (c : c'@('、') : cs)
+	| k > n = ([c, c'], cs)
+	| otherwise = let (l, ls) = splitWords_ n (k + 4) cs in (c : c' : l, ls)
 splitWords_ n k (c : c'@('。') : cs)
 	| k > n = ([c, c'], cs)
 	| otherwise = let (l, ls) = splitWords_ n (k + 4) cs in (c : c' : l, ls)

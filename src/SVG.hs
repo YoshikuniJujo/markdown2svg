@@ -110,6 +110,14 @@ textToSVGData fp r h (Image _ p ttl : ts)
 		"large" -> leftMargin r
 		"small" -> ratio * 4 / 10
 		_ -> ratio * 1 / 3
+textToSVGData fp r h (Link txt addrs ttl : ts)
+	| h + normalSep r > bottomBorder r = [] : (l : svg') : svgs'
+	| otherwise = (l : svg) : svgs
+	where
+	svg : svgs = textToSVGData fp r (h + normalSep r) ts
+	svg' : svgs' = textToSVGData fp r (topMargin r) ts
+	l = Text (TopLeft (paraLeftMargin r) (h + normalSep r)) (normal r) (ColorName "blue")
+			normalFont $ txt ++ "(" ++ addrs ++ ")"
 
 splitAtString :: Int -> String -> (String, String)
 splitAtString len = sepStr 0

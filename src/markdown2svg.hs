@@ -20,11 +20,7 @@ main = do
 		dir = getDir opts
 		idir = getIDir opts
 	cnt <- readFile fp
-	is <- case idir of
-		Just d -> do
-			fps <- getImageFilePath d
-			mapM pathCont fps
-		_ -> return []
+	is <- mapM pathCont =<< getImageFilePath (fromMaybe "." idir)
 	copy (fromMaybe "." idir) (fromMaybe "." dir) $ map (takeFileName . fst) is
 	case parse cnt of
 		Just t -> forM_ (zip [1 ..] $ textToSVG is True size t) $ \(i, s) ->
