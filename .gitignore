@@ -2,3 +2,5 @@
 *.png
 /dist/
 *.ebuild
+/images/
+/svgs/

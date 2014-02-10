@@ -5,7 +5,9 @@ module SVG (
 import Control.Applicative
 import Data.Maybe
 import Data.Char
-import Text.XML.YJSVG
+import System.FilePath
+import Text.XML.YJSVG hiding (Image)
+import qualified Text.XML.YJSVG as SVG
 
 import Text.Markdown.Pap
 import SepWords
@@ -17,8 +19,8 @@ normalFont = "Kochi Mincho"
 -- normalFont = "Kochi Gothic"
 codeFont = "Kochi Gothic"
 
-textToSVG :: Bool -> Double -> [Text] -> [String]
-textToSVG n r = map (showSVG (width r) (height r)) . textToSVGData r (topMargin r) .
+textToSVG :: [(FilePath, String)] -> Bool -> Double -> [Text] -> [String]
+textToSVG fp n r = map (showSVG (width r) (height r)) . textToSVGData fp r (topMargin r) .
 	preprocess .
 	if n then addChapters [Nothing, Just 0, Just 0, Just 0, Nothing, Nothing] else id
 
@@ -53,40 +55,55 @@ codeSep = (* (4 / 3)) <$> code
 lineChars :: Int
 lineChars = 60
 
-textToSVGData :: Double -> Double -> [Text] -> [[SVG]]
-textToSVGData r h [] = [[]]
-textToSVGData r h (Header n s : ts)
+textToSVGData :: [(FilePath, String)] -> Double -> Double -> [Text] -> [[SVG]]
+textToSVGData fp r h [] = [[]]
+textToSVGData fp r h (Header n s : ts)
 	| h > bottomBorder r - headerSep n r = [l] : all
 	| otherwise = (l : one) : rest
 	where
 	l = Text (TopLeft (leftMargin r) (h + headerSep n r)) (header n r) (ColorName "black") headerFont s
-	one : rest = textToSVGData r (h + headerSep n r * 5 / 4) ts
-	all = textToSVGData r (topMargin r) ts
-textToSVGData r h (Paras [] : ts) = textToSVGData r h ts
-textToSVGData r h (Paras (p : ps) : ts)
+	one : rest = textToSVGData fp r (h + headerSep n r * 5 / 4) ts
+	all = textToSVGData fp r (topMargin r) ts
+textToSVGData fp r h (Paras [] : ts) = textToSVGData fp r h ts
+textToSVGData fp r h (Paras (p : ps) : ts)
 	| h' > bottomBorder r = [] : (svgs' ++ one') : rest'
 	| otherwise = (svgs ++ one) : rest
 	where
 	(h', svgs) = paraToSVGData r h p
 	(h'', svgs') = paraToSVGData r (topMargin r) p
-	one : rest = textToSVGData r h' (Paras ps : ts)
-	one' : rest' = textToSVGData r h'' (Paras ps : ts)
-textToSVGData r h (List l : ts)
+	one : rest = textToSVGData fp r h' (Paras ps : ts)
+	one' : rest' = textToSVGData fp r h'' (Paras ps : ts)
+textToSVGData fp r h (List l : ts)
 	| h' > bottomBorder r = [] : (svgs' ++ one') : rest'
 	| otherwise = (svgs ++ one) : rest
 	where
 	(_, h', svgs) = listToSVGData 1 "*+-------" r h (paraLeftMargin r) l
 	(_, h'', svgs') = listToSVGData 1 "*+-------" r (topMargin r) (paraLeftMargin r) l
-	one : rest = textToSVGData r h' ts
-	one' : rest' = textToSVGData r h'' ts
-textToSVGData r h (Code s : ts)
+	one : rest = textToSVGData fp r h' ts
+	one' : rest' = textToSVGData fp r h'' ts
+textToSVGData fp r h (Code s : ts)
 	| h' > bottomBorder r = [] : (svgs' ++ one') : rest'
 	| otherwise = (svgs ++ one) : rest
 	where
 	(h', svgs) = codeToSVGData r (h + codeSep r) (lines s)
 	(h'', svgs') = codeToSVGData r (topMargin r) (lines s)
-	one : rest = textToSVGData r (h' + codeSep r) ts
-	one' : rest' = textToSVGData r (h'' + codeSep r) ts
+	one : rest = textToSVGData fp r (h' + codeSep r) ts
+	one' : rest' = textToSVGData fp r (h'' + codeSep r) ts
+textToSVGData fp r h (Image _ p ttl : ts)
+	| h + ht > bottomBorder r =
+		[] : (SVG.Image (TopLeft (leftMargin r) (topMargin r)) wt ht p : svg') : svgs'
+	| otherwise = (SVG.Image (TopLeft (leftMargin r) h) wt ht p : svg) : svgs
+	where
+	svg : svgs = textToSVGData fp r (h + ht + r * 100) ts
+	svg' : svgs' = textToSVGData fp r (topMargin r + ht + r * 100) ts
+	size = case ttl of
+		"small" -> Small
+		"large" -> Large
+		_ -> Medium
+	(wt, ht) = case getSize fp p size of
+		Just (w_, h_) -> (w_ * ratio, h_ * ratio)
+		_ -> (r * 1000, r * 1000)
+	ratio = width r - 2 * leftMargin r
 
 splitAtString :: Int -> String -> (String, String)
 splitAtString len = sepStr 0
@@ -179,3 +196,8 @@ remSpaces "" = ""
 remSpaces (c : ' ' : c' : cs)
 	| not (isAscii c) || not (isAscii c') = c : c' : remSpaces cs
 remSpaces (c : cs) = c : remSpaces cs
+
+getSize :: [(FilePath, String)] -> FilePath -> Size -> Maybe (Double, Double)
+getSize dict fp sz = case lookup fp dict of
+	Just src -> convertedSize src sz
+	_ -> error $ show (map fst dict) ++ " " ++ show fp -- Nothing
