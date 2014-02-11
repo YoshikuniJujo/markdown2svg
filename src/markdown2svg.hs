@@ -8,7 +8,7 @@ import System.Exit
 import System.Directory
 import File.Binary
 
-import Text.Markdown.Pap
+import Text.Markdown.Pap (parse)
 import SVG
 
 main :: IO ()
@@ -19,11 +19,14 @@ main = do
 	let	size = getSizeR opts
 		dir = getDir opts
 		idir = getIDir opts
+		hfont = getFont opts Header
+		nfont = getFont opts Normal
+		cfont = getFont opts Code
 	cnt <- readFile fp
 	is <- mapM pathCont =<< getImageFilePath (fromMaybe "." idir)
 	copy (fromMaybe "." idir) (fromMaybe "." dir) $ map (takeFileName . fst) is
 	case parse cnt of
-		Just t -> forM_ (zip [1 ..] $ textToSVG is True size t) $ \(i, s) ->
+		Just t -> forM_ (zip [1 ..] $ textToSVG (hfont, nfont, cfont) is True size t) $ \(i, s) ->
 			writeFile (mkSVGFileName dir fp i) s
 		_ -> return ()
 
@@ -36,13 +39,23 @@ show2 x = replicate (2 - length s) '0' ++ s
 	where
 	s = show x
 
-data Option = Dir FilePath | Size Double | ImageDir FilePath deriving Show
+data Option
+	= Dir FilePath
+	| Size Double
+	| ImageDir FilePath
+	| Font FontType String
+	deriving Show
+
+data FontType = Header | Normal | Code deriving (Eq, Show)
 
 options :: [OptDescr Option]
 options = [
 	Option "d" [] (ReqArg Dir "output directory") "set ouput directory",
 	Option "s" [] (ReqArg (Size . read) "size ratio") "set size ratio",
-	Option "i" [] (ReqArg ImageDir "image directory") "set image directory" ]
+	Option "i" [] (ReqArg ImageDir "image directory") "set image directory",
+	Option "" ["header-font"] (ReqArg (Font Header) "header font") "set header font",
+	Option "" ["normal-font"] (ReqArg (Font Normal) "normal font") "set normal font",
+	Option "" ["code-font"] (ReqArg (Font Code) "code font") "set code font" ]
 
 getDir, getIDir :: [Option] -> Maybe FilePath
 getDir [] = Nothing
@@ -57,6 +70,14 @@ getSizeR :: [Option] -> Double
 getSizeR [] = 0.15
 getSizeR (Size sr : _) = sr
 getSizeR (_ : ops) = getSizeR ops
+
+getFont :: [Option] -> FontType -> String
+getFont [] Header = "Sans"
+getFont [] Normal = "Serif"
+getFont [] Code = "Monospace"
+getFont (Font ft fn : _) ft0
+	| ft == ft0 = fn
+getFont (_ : ops) ft0 = getFont ops ft0
 
 getImageFilePath :: FilePath -> IO [FilePath]
 getImageFilePath fp = do

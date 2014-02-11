@@ -13,15 +13,22 @@ import Text.Markdown.Pap
 import SepWords
 import Image
 
-headerFont, normalFont, codeFont :: Font
-headerFont = Font "Kochi Gothic" Normal
-normalFont = Font "Kochi Mincho" Normal
+type FontsS = (String, String, String)
+type Fonts = (Font, Font, Font)
+
+-- headerFont, normalFont, codeFont :: Font
+-- headerFont = Font "Kochi Gothic" Normal
+-- normalFont = Font "Kochi Mincho" Normal
+-- headerFont = Font "Sans" Normal
+-- normalFont = Font "Serif" Normal
 -- normalFont = "Kochi Gothic"
 -- codeFont = "Kochi Gothic"
 codeFont = Font "Monospace" Normal
 
-textToSVG :: [(FilePath, String)] -> Bool -> Double -> [Text] -> [String]
-textToSVG fp n r = map (showSVG (width r) (height r)) . textToSVGData fp r (topMargin r) .
+textToSVG :: FontsS -> [(FilePath, String)] -> Bool -> Double -> [Text] -> [String]
+textToSVG (hf, nf, cf) fp n r =
+	map (showSVG (width r) (height r)) .
+	textToSVGData (Font hf Normal, Font nf Normal, Font cf Normal) fp r (topMargin r) .
 	preprocess .
 	if n then addChapters [Nothing, Just 0, Just 0, Just 0, Nothing, Nothing] else id
 
@@ -58,47 +65,47 @@ codeSep = (* (4 / 3)) <$> code
 lineChars :: Int
 lineChars = 60
 
-textToSVGData :: [(FilePath, String)] -> Double -> Double -> [Text] -> [[SVG]]
-textToSVGData fp r h [] = [[]]
-textToSVGData fp r h (Header n s : ts)
+textToSVGData :: Fonts -> [(FilePath, String)] -> Double -> Double -> [Text] -> [[SVG]]
+textToSVGData fs@(hf, nf, cf) fp r h [] = [[]]
+textToSVGData fs@(hf, nf, cf) fp r h (Header n s : ts)
 	| h > bottomBorder r - headerSep n r = [l] : all
 	| otherwise = (l : one) : rest
 	where
-	l = Text (TopLeft (leftMargin r) (h + headerSep n r)) (header n r) (ColorName "black") headerFont s
-	one : rest = textToSVGData fp r (h + headerSep n r * 5 / 4) ts
-	all = textToSVGData fp r (topMargin r) ts
-textToSVGData fp r h (Paras [] : ts) = textToSVGData fp r h ts
-textToSVGData fp r h (Paras (p : ps) : ts)
+	l = Text (TopLeft (leftMargin r) (h + headerSep n r)) (header n r) (ColorName "black") hf s
+	one : rest = textToSVGData fs fp r (h + headerSep n r * 5 / 4) ts
+	all = textToSVGData fs fp r (topMargin r) ts
+textToSVGData fs@(hf, nf, cf) fp r h (Paras [] : ts) = textToSVGData fs fp r h ts
+textToSVGData fs@(hf, nf, cf) fp r h (Paras (p : ps) : ts)
 	| h' > bottomBorder r = [] : (svgs' ++ one') : rest'
 	| otherwise = (svgs ++ one) : rest
 	where
-	(h', svgs) = paraToSVGData r h p
-	(h'', svgs') = paraToSVGData r (topMargin r) p
-	one : rest = textToSVGData fp r h' (Paras ps : ts)
-	one' : rest' = textToSVGData fp r h'' (Paras ps : ts)
-textToSVGData fp r h (List l : ts)
+	(h', svgs) = paraToSVGData nf r h p
+	(h'', svgs') = paraToSVGData nf r (topMargin r) p
+	one : rest = textToSVGData fs fp r h' (Paras ps : ts)
+	one' : rest' = textToSVGData fs fp r h'' (Paras ps : ts)
+textToSVGData fs@(hf, nf, cf) fp r h (List l : ts)
 	| h' > bottomBorder r = [] : (svgs' ++ one') : rest'
 	| otherwise = (svgs ++ one) : rest
 	where
-	(_, h', svgs) = listToSVGData 1 "*+-------" r (h + 100 * r) (listLeftMargin r) l
-	(_, h'', svgs') = listToSVGData 1 "*+-------" r (topMargin r) (listLeftMargin r) l
-	one : rest = textToSVGData fp r (h' + 100 * r) ts
-	one' : rest' = textToSVGData fp r (h'' + 100 * r) ts
-textToSVGData fp r h (Code s : ts)
+	(_, h', svgs) = listToSVGData nf 1 "*+-------" r (h + 100 * r) (listLeftMargin r) l
+	(_, h'', svgs') = listToSVGData nf 1 "*+-------" r (topMargin r) (listLeftMargin r) l
+	one : rest = textToSVGData fs fp r (h' + 100 * r) ts
+	one' : rest' = textToSVGData fs fp r (h'' + 100 * r) ts
+textToSVGData fs@(hf, nf, cf) fp r h (Code s : ts)
 	| h' > bottomBorder r = [] : (svgs' ++ one') : rest'
 	| otherwise = (svgs ++ one) : rest
 	where
-	(h', svgs) = codeToSVGData r (h + codeSep r) (lines s)
-	(h'', svgs') = codeToSVGData r (topMargin r) (lines s)
-	one : rest = textToSVGData fp r (h' + codeSep r) ts
-	one' : rest' = textToSVGData fp r (h'' + codeSep r) ts
-textToSVGData fp r h (Image _ p ttl : ts)
+	(h', svgs) = codeToSVGData cf r (h + codeSep r) (lines s)
+	(h'', svgs') = codeToSVGData cf r (topMargin r) (lines s)
+	one : rest = textToSVGData fs fp r (h' + codeSep r) ts
+	one' : rest' = textToSVGData fs fp r (h'' + codeSep r) ts
+textToSVGData fs@(hf, nf, cf) fp r h (Image _ p ttl : ts)
 	| h + ht > bottomBorder r =
 		[] : (SVG.Image (TopLeft left (topMargin r)) wt ht p : svg') : svgs'
 	| otherwise = (SVG.Image (TopLeft left h) wt ht p : svg) : svgs
 	where
-	svg : svgs = textToSVGData fp r (h + ht + r * 100) ts
-	svg' : svgs' = textToSVGData fp r (topMargin r + ht + r * 100) ts
+	svg : svgs = textToSVGData fs fp r (h + ht + r * 100) ts
+	svg' : svgs' = textToSVGData fs fp r (topMargin r + ht + r * 100) ts
 	size = case ttl of
 		"small" -> Small
 		"large" -> Large
@@ -111,14 +118,14 @@ textToSVGData fp r h (Image _ p ttl : ts)
 		"large" -> leftMargin r
 		"small" -> ratio * 4 / 10
 		_ -> ratio * 1 / 3
-textToSVGData fp r h (Link txt addrs ttl : ts)
+textToSVGData fs@(hf, nf, cf) fp r h (Link txt addrs ttl : ts)
 	| h + normalSep r > bottomBorder r = [] : (l : svg') : svgs'
 	| otherwise = (l : svg) : svgs
 	where
-	svg : svgs = textToSVGData fp r (h + normalSep r) ts
-	svg' : svgs' = textToSVGData fp r (topMargin r) ts
+	svg : svgs = textToSVGData fs fp r (h + normalSep r) ts
+	svg' : svgs' = textToSVGData fs fp r (topMargin r) ts
 	l = Text (TopLeft (paraLeftMargin r) (h + normalSep r)) (normal r) (ColorName "blue")
-			normalFont $ txt ++ "(" ++ addrs ++ ")"
+			nf $ txt ++ "(" ++ addrs ++ ")"
 
 splitAtString :: Int -> String -> (String, String)
 splitAtString len = sepStr 0
@@ -150,45 +157,45 @@ separateString len = sepStr 0
 		| isAscii c = let s : ss = sepStr (n + 1) cs in (c : s) : ss
 		| otherwise = let s : ss = sepStr (n + 2) cs in (c : s) : ss
 
-paraToSVGData :: Double -> Double -> String -> (Double, [SVG])
-paraToSVGData r h str = (h', l : svgs)
+paraToSVGData :: Font -> Double -> Double -> String -> (Double, [SVG])
+paraToSVGData nf r h str = (h', l : svgs)
 	where
 	(s, t) = splitWords (lineChars - 3) str
-	l = Text (TopLeft (paraLeftMargin r + normal r) (h + normal r)) (normal r) (ColorName "black") normalFont s
+	l = Text (TopLeft (paraLeftMargin r + normal r) (h + normal r)) (normal r) (ColorName "black") nf s
 	ls = sepWords lineChars t
-	(h', svgs) = strsToSVGData r (h + normalSep r) ls
+	(h', svgs) = strsToSVGData nf r (h + normalSep r) ls
 
-strsToSVGData :: Double -> Double -> [String] -> (Double, [SVG])
-strsToSVGData r h [] = (h, [])
-strsToSVGData r h ([] : ss) = strsToSVGData r h ss
-strsToSVGData r h (s : ss) = (h', l : svgs)
+strsToSVGData :: Font -> Double -> Double -> [String] -> (Double, [SVG])
+strsToSVGData _ r h [] = (h, [])
+strsToSVGData nf r h ([] : ss) = strsToSVGData nf r h ss
+strsToSVGData nf r h (s : ss) = (h', l : svgs)
 	where
-	l = Text (TopLeft (paraLeftMargin r) (h + normal r)) (normal r) (ColorName "black") normalFont s
-	(h', svgs) = strsToSVGData r (h + normalSep r) ss
+	l = Text (TopLeft (paraLeftMargin r) (h + normal r)) (normal r) (ColorName "black") nf s
+	(h', svgs) = strsToSVGData nf r (h + normalSep r) ss
 
-listToSVGData :: Int -> String -> Double -> Double -> Double -> List -> (Int, Double, [SVG])
-listToSVGData n sym r y x [] = (n, y, [])
-listToSVGData n sym r y x (lst : lsts) = (n'', y'', svgs ++ svgs')
+listToSVGData :: Font -> Int -> String -> Double -> Double -> Double -> List -> (Int, Double, [SVG])
+listToSVGData _ n sym r y x [] = (n, y, [])
+listToSVGData nf n sym r y x (lst : lsts) = (n'', y'', svgs ++ svgs')
 	where
-	(n', y', svgs) = list1ToSVGData n sym r y x lst
-	(n'', y'', svgs') = listToSVGData n' sym r y' x lsts
+	(n', y', svgs) = list1ToSVGData nf n sym r y x lst
+	(n'', y'', svgs') = listToSVGData nf n' sym r y' x lsts
 
-list1ToSVGData :: Int -> String -> Double -> Double -> Double -> List1 -> (Int, Double, [SVG])
-list1ToSVGData n sym r y x (BulItem s lst) = (n, h', l : svgs)
+list1ToSVGData :: Font -> Int -> String -> Double -> Double -> Double -> List1 -> (Int, Double, [SVG])
+list1ToSVGData nf n sym r y x (BulItem s lst) = (n, h', l : svgs)
 	where
-	l = Text (TopLeft x (y + normal r)) (normal r) (ColorName "black") normalFont $ head sym : ' ' : s
-	(_, h', svgs) = listToSVGData n (tail sym) r (y + normalSep r) (x + normal r * 2) lst
-list1ToSVGData n sym r y x (OrdItem s lst) = (n + 1, h', l : svgs)
+	l = Text (TopLeft x (y + normal r)) (normal r) (ColorName "black") nf $ head sym : ' ' : s
+	(_, h', svgs) = listToSVGData nf n (tail sym) r (y + normalSep r) (x + normal r * 2) lst
+list1ToSVGData nf n sym r y x (OrdItem s lst) = (n + 1, h', l : svgs)
 	where
-	l = Text (TopLeft x (y + normal r)) (normal r) (ColorName "black") normalFont $ show n ++ '.' : ' ' : s
-	(_, h', svgs) = listToSVGData n (tail sym) r (y + normalSep r) (x + normal r * 2) lst
+	l = Text (TopLeft x (y + normal r)) (normal r) (ColorName "black") nf $ show n ++ '.' : ' ' : s
+	(_, h', svgs) = listToSVGData nf n (tail sym) r (y + normalSep r) (x + normal r * 2) lst
 
-codeToSVGData :: Double -> Double -> [String] -> (Double, [SVG])
-codeToSVGData _ h [] = (h, [])
-codeToSVGData r h (s : ss) = (h', l : svgs)
+codeToSVGData :: Font -> Double -> Double -> [String] -> (Double, [SVG])
+codeToSVGData _ _ h [] = (h, [])
+codeToSVGData cf r h (s : ss) = (h', l : svgs)
 	where
-	l = Text (TopLeft (codeLeftMargin r) (h + code r)) (code r) (ColorName "black") codeFont s
-	(h', svgs) = codeToSVGData r (h + codeSep r) ss
+	l = Text (TopLeft (codeLeftMargin r) (h + code r)) (code r) (ColorName "black") cf s
+	(h', svgs) = codeToSVGData cf r (h + codeSep r) ss
 
 addChapters :: [Maybe Int] -> [Text] -> [Text]
 addChapters _ [] = []
