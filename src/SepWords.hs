@@ -19,6 +19,9 @@ splitWords_ n k (c : c'@('、') : cs)
 splitWords_ n k (c : c'@('。') : cs)
 	| k > n = ([c, c'], cs)
 	| otherwise = let (l, ls) = splitWords_ n (k + 4) cs in (c : c' : l, ls)
+splitWords_ n k ca@(c@('「') : cs)
+	| k > n = ("", ca)
+	| otherwise = let (l, ls) = splitWords_ n (k + 2) cs in (c : l, ls)
 splitWords_ n k (c : cs)
 	| isSpace c && k > n = ("", cs)
 	| not (isAscii c) && k > n = ([c], cs)
@@ -39,6 +42,9 @@ sepWords_ n k (c : c'@('、') : cs)
 sepWords_ n k (c : c'@('。') : cs)
 	| k > n = [c, c'] : sepWords_ n 0 cs
 	| otherwise = let l : ls = sepWords_ n (k + 4) cs in (c : c' : l) : ls
+sepWords_ n k (c@('「') : cs)
+	| k > n = let l : ls = sepWords_ n 2 cs in "" : (c : l) : ls
+	| otherwise = let l : ls = sepWords_ n (k + 2) cs in (c : l) : ls
 sepWords_ n k (c : cs)
 	| isSpace c && k > n = "" : sepWords_ n 0 cs
 	| not (isAscii c) && k > n = [c] : sepWords_ n 0 cs
