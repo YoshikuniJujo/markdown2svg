@@ -13,12 +13,12 @@ import Text.Markdown.Pap
 import SepWords
 import Image
 
-headerFont, normalFont, codeFont :: String
-headerFont = "Kochi Gothic"
-normalFont = "Kochi Mincho"
+headerFont, normalFont, codeFont :: Font
+headerFont = Font "Kochi Gothic" Normal
+normalFont = Font "Kochi Mincho" Normal
 -- normalFont = "Kochi Gothic"
 -- codeFont = "Kochi Gothic"
-codeFont = "Monospace"
+codeFont = Font "Monospace" Normal
 
 textToSVG :: [(FilePath, String)] -> Bool -> Double -> [Text] -> [String]
 textToSVG fp n r = map (showSVG (width r) (height r)) . textToSVGData fp r (topMargin r) .
