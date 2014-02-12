@@ -67,13 +67,20 @@ lineChars = 60
 
 textToSVGData :: Fonts -> [(FilePath, String)] -> Double -> Double -> [Text] -> [[SVG]]
 textToSVGData fs@(hf, nf, cf) fp r h [] = [[]]
+textToSVGData fs@(hf, nf, cf) fp r h (Header n s : ts@(i@(Image _ _ _) : _))
+	| h + headerSep n r * 5 / 4 + getImageHeight fp r i > bottomBorder r =
+		[] : (l : one') : rest'
+	where
+	l = Text (TopLeft (leftMargin r) (topMargin r + headerSep n r)) (header n r) (ColorName "black") hf s
+	one' : rest' = textToSVGData fs fp r (topMargin r + headerSep n r * 5 / 4) ts
 textToSVGData fs@(hf, nf, cf) fp r h (Header n s : ts)
-	| h > bottomBorder r - headerSep n r = [l] : all
+	| h > bottomBorder r - headerSep n r = [] : (l' : one') : rest'
 	| otherwise = (l : one) : rest
 	where
 	l = Text (TopLeft (leftMargin r) (h + headerSep n r)) (header n r) (ColorName "black") hf s
+	l' = Text (TopLeft (leftMargin r) (topMargin r + headerSep n r)) (header n r) (ColorName "black") hf s
 	one : rest = textToSVGData fs fp r (h + headerSep n r * 5 / 4) ts
-	all = textToSVGData fs fp r (topMargin r) ts
+	one' : rest' = textToSVGData fs fp r (topMargin r + headerSep n r * 5 / 4) ts
 textToSVGData fs@(hf, nf, cf) fp r h (Paras [] : ts) = textToSVGData fs fp r h ts
 textToSVGData fs@(hf, nf, cf) fp r h (Paras (p : ps) : ts)
 	| h' > bottomBorder r = [] : (svgs' ++ one') : rest'
@@ -225,3 +232,16 @@ getSize :: [(FilePath, String)] -> FilePath -> Size -> Maybe (Double, Double)
 getSize dict fp sz = case lookup fp dict of
 	Just src -> convertedSize src sz
 	_ -> error $ show (map fst dict) ++ " " ++ show fp -- Nothing
+
+getImageHeight :: [(FilePath, String)] -> Double -> Text -> Double
+getImageHeight fp r (Image _ p ttl) = ht
+	where
+	ratio = width r - 2 * leftMargin r
+	size = case ttl of
+		"small" -> Small
+		"large" -> Large
+		_ -> Medium
+	(wt, ht) = case getSize fp p size of
+		Just (w_, h_) -> (w_ * ratio, h_ * ratio)
+		_ -> (r * 1000, r * 1000)
+getImageHeight _ _ _ = error "not Image"
