@@ -59,7 +59,7 @@ normal = (80 *)
 normalSep = (* (4 / 3)) <$> normal
 
 code, codeSep :: Double -> Double
-code = (70 *)
+code = (65 *)
 codeSep = (* (4 / 3)) <$> code
 
 lineChars :: Int
@@ -201,8 +201,13 @@ codeToSVGData :: Font -> Double -> Double -> [String] -> (Double, [SVG])
 codeToSVGData _ _ h [] = (h, [])
 codeToSVGData cf r h (s : ss) = (h', l : svgs)
 	where
-	l = Text (TopLeft (codeLeftMargin r) (h + code r)) (code r) (ColorName "black") cf s
+	l = Text
+		(TopLeft
+			(codeLeftMargin r + (code r) * spaces)
+			(h + code r))
+		(code r) (ColorName "black") cf s
 	(h', svgs) = codeToSVGData cf r (h + codeSep r) ss
+	spaces = (* (123 / 200)) $ fromIntegral $ length $ takeWhile (== ' ') s
 
 addChapters :: [Maybe Int] -> [Text] -> [Text]
 addChapters _ [] = []
