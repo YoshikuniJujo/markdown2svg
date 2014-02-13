@@ -13,10 +13,17 @@ import SVG
 
 main :: IO ()
 main = do
-	(opts, [fp], emsgs) <- getOpt Permute options <$> getArgs
+	(opts, ~[fp], emsgs) <- getOpt Permute options <$> getArgs
 	mapM_ putStrLn emsgs
 	when (not $ null emsgs) exitFailure
-	let	size = getSizeR opts
+	case opts of
+		[Help] -> do
+			putStr $ usageInfo
+				"Usage: markdown2svg [OPTION] foo.md"
+				options
+			exitSuccess
+		_ -> return ()
+	let	size = getSizeR opts * 0.3
 		dir = getDir opts
 		idir = getIDir opts
 		hfont = getFont opts Header
@@ -44,18 +51,20 @@ data Option
 	| Size Double
 	| ImageDir FilePath
 	| Font FontType String
+	| Help
 	deriving Show
 
 data FontType = Header | Normal | Code deriving (Eq, Show)
 
 options :: [OptDescr Option]
 options = [
-	Option "d" [] (ReqArg Dir "output directory") "set ouput directory",
-	Option "s" [] (ReqArg (Size . read) "size ratio") "set size ratio",
-	Option "i" [] (ReqArg ImageDir "image directory") "set image directory",
-	Option "" ["header-font"] (ReqArg (Font Header) "header font") "set header font",
-	Option "" ["normal-font"] (ReqArg (Font Normal) "normal font") "set normal font",
-	Option "" ["code-font"] (ReqArg (Font Code) "code font") "set code font" ]
+	Option "?h" ["help"] (NoArg Help) "help message",
+	Option "d" ["output-dir"] (ReqArg Dir "output_directory") "set ouput directory",
+	Option "s" ["size-ratio"] (ReqArg (Size . read) "size_ratio") "set size ratio",
+	Option "i" ["image-dir"] (ReqArg ImageDir "image_directory") "set image directory",
+	Option "" ["header-font"] (ReqArg (Font Header) "header_font") "set header font",
+	Option "" ["normal-font"] (ReqArg (Font Normal) "normal_font") "set normal font",
+	Option "" ["code-font"] (ReqArg (Font Code) "code_font") "set code font" ]
 
 getDir, getIDir :: [Option] -> Maybe FilePath
 getDir [] = Nothing
@@ -67,7 +76,7 @@ getIDir (ImageDir d : _) = Just d
 getIDir (_ : ops) = getIDir ops
 
 getSizeR :: [Option] -> Double
-getSizeR [] = 0.15
+getSizeR [] = 1
 getSizeR (Size sr : _) = sr
 getSizeR (_ : ops) = getSizeR ops
 
