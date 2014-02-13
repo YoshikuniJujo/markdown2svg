@@ -67,6 +67,12 @@ lineChars = 60
 
 textToSVGData :: Fonts -> [(FilePath, String)] -> Double -> Double -> [Text] -> [[SVG]]
 textToSVGData fs@(hf, nf, cf) fp r h [] = [[]]
+textToSVGData fs@(hf, nf, cf) fp r h (Header n s : ts@(Paras (p : _) : _))
+	| h' > bottomBorder r = [] : (l : one') : rest'
+	where
+	(h', svgs) = paraToSVGData nf r (h + headerSep n r * 5 / 4) p
+	l = Text (TopLeft (leftMargin r) (topMargin r + headerSep n r)) (header n r) (ColorName "black") hf s
+	one' : rest' = textToSVGData fs fp r (topMargin r + headerSep n r * 5 / 4) ts
 textToSVGData fs@(hf, nf, cf) fp r h (Header n s : ts@(i@(Image _ _ _) : _))
 	| h + headerSep n r * 5 / 4 + getImageHeight fp r i > bottomBorder r =
 		[] : (l : one') : rest'
