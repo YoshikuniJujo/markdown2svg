@@ -1,6 +1,7 @@
 import Control.Applicative
 import Control.Monad
 import Data.Maybe
+import Data.List
 import System.Environment
 import System.FilePath
 import System.Console.GetOpt
@@ -11,18 +12,22 @@ import File.Binary
 import Text.Markdown.Pap (parse)
 import SVG
 
+import Paths_markdown2svg (version)
+import qualified Distribution.Version as D (Version(..))
+
 main :: IO ()
 main = do
 	(opts, ~[fp], emsgs) <- getOpt Permute options <$> getArgs
 	mapM_ putStrLn emsgs
 	when (not $ null emsgs) exitFailure
-	case opts of
-		[Help] -> do
-			putStr $ usageInfo
-				"Usage: markdown2svg [OPTION] foo.md"
-				options
-			exitSuccess
-		_ -> return ()
+	when (isVersion opts) $ do
+		putStrLn $ "markdown2svg " ++ showVersion version
+		exitSuccess
+	when (isHelp opts) $ do
+		putStr $ usageInfo
+			"Usage: markdown2svg [OPTION] foo.md"
+			options
+		exitSuccess
 	let	size = getSizeR opts * 0.3
 		dir = getDir opts
 		idir = getIDir opts
@@ -52,19 +57,25 @@ data Option
 	| ImageDir FilePath
 	| Font FontType String
 	| Help
-	deriving Show
+	| Version
+	deriving (Eq, Show)
 
 data FontType = Header | Normal | Code deriving (Eq, Show)
 
 options :: [OptDescr Option]
 options = [
 	Option "?h" ["help"] (NoArg Help) "help message",
+	Option "" ["version"] (NoArg Version) "print version",
 	Option "d" ["output-dir"] (ReqArg Dir "output_directory") "set ouput directory",
 	Option "s" ["size-ratio"] (ReqArg (Size . read) "size_ratio") "set size ratio",
 	Option "i" ["image-dir"] (ReqArg ImageDir "image_directory") "set image directory",
 	Option "" ["header-font"] (ReqArg (Font Header) "header_font") "set header font",
 	Option "" ["normal-font"] (ReqArg (Font Normal) "normal_font") "set normal font",
 	Option "" ["code-font"] (ReqArg (Font Code) "code_font") "set code font" ]
+
+isVersion, isHelp :: [Option] -> Bool
+isVersion = (Version `elem`)
+isHelp = (Help `elem`)
 
 getDir, getIDir :: [Option] -> Maybe FilePath
 getDir [] = Nothing
@@ -102,3 +113,6 @@ pathCont fp = do
 
 copy :: FilePath -> FilePath -> [FilePath] -> IO ()
 copy s d f = zipWithM_ copyFile (map (s </>) f) (map (d </>) f)
+
+showVersion :: D.Version -> String
+showVersion D.Version{ D.versionBranch = vb } = intercalate "." $ map show vb
